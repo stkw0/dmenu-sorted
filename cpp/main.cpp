@@ -80,15 +80,11 @@ std::vector<item> get_items(const auto& cache_file) {
 }
 
 void update_items_cache(const auto& cache_file, const auto& cmd) {
-
-    std::ifstream r_cache(cache_file);
-    if(!r_cache.is_open() || r_cache.get(), !r_cache.good()) {
+    if(std::ifstream c(cache_file); !c.is_open()) {
         std::ofstream w_cache(cache_file);
         for(auto& e : commands()) w_cache << e << " 0\n";
     } else {
-        r_cache.close();
-        fs::remove(fs::path(cache_file));
-        std::ofstream w_cache(cache_file);
+        std::ofstream w_cache(cache_file, std::ios::trunc);
         for(auto& e : get_items(cache_file)) {
             if(e.first == cmd) e.second++;
 
