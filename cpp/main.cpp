@@ -14,6 +14,8 @@
 namespace fs = std::experimental::filesystem;
 using item = std::pair<std::string, int>;
 
+// TODO: Handle errors
+
 std::vector<const char*> paths() {
     using namespace std;
 
@@ -80,16 +82,11 @@ std::vector<item> get_items(const auto& cache_file) {
 }
 
 void update_items_cache(const auto& cache_file, const auto& cmd) {
-    if(std::ifstream c(cache_file); !c.is_open()) {
-        std::ofstream w_cache(cache_file);
-        for(auto& e : commands()) w_cache << e << " 0\n";
-    } else {
-        std::ofstream w_cache(cache_file, std::ios::trunc);
-        for(auto& e : get_items(cache_file)) {
-            if(e.first == cmd) e.second++;
+    std::ofstream cache(cache_file, std::ios::trunc);
+    for(auto& e : get_items(cache_file)) {
+        if(e.first == cmd) e.second++;
 
-            w_cache << e.first << " " << e.second << "\n";
-        }
+        cache << e.first << " " << e.second << "\n";
     }
 }
 
