@@ -12,6 +12,7 @@
 #include "spawn.hpp"
 
 namespace fs = std::experimental::filesystem;
+using item = std::pair<std::string, int>;
 
 std::vector<const char*> paths() {
     using namespace std;
@@ -35,10 +36,11 @@ std::vector<std::string> commands() {
     if(commands.size() > 0) return commands;
 
     for(auto& path : paths()) try {
-            if(!is_executable(path)) continue;
 
-            for(auto& e : fs::directory_iterator(path))
+            for(auto& e : fs::directory_iterator(path)) {
+                if(!is_executable(e)) continue;
                 commands.emplace_back(e.path().filename().c_str());
+            }
         } catch(...) {
             // Ignore errors for now
         }
@@ -49,11 +51,11 @@ std::vector<std::string> commands() {
     return commands;
 }
 
-int main() {
-    std::string home = getenv("HOME");
+std::vector<item> get_items(const auto& cache_file) {
+    static std::vector<item> items_list;
+    if(items_list.size() > 0) return items_list;
 
-    std::vector<std::pair<std::string, int>> cmd_list;
-    std::ifstream cache(home + "/.cache/dmenu_sorted");
+    std::ifstream cache(cache_file);
     if(cache.is_open()) {
         do {
             std::string cmd;
@@ -62,46 +64,61 @@ int main() {
 
             int n;
             cache >> n;
-            cmd_list.emplace_back(std::make_pair(cmd, n));
+            items_list.emplace_back(std::make_pair(cmd, n));
         } while(cache.good());
 
         cache.close();
 
-        std::sort(cmd_list.begin(), cmd_list.end(),
-                  [](std::pair<std::string, int> a, std::pair<std::string, int> b) {
-                      return a.second > b.second;
-                  });
+        std::sort(items_list.begin(), items_list.end(), [](const item& a, const item& b) {
+            return a.second > b.second;
+        });
     } else {
-        for(auto& e : commands()) cmd_list.emplace_back(std::make_pair(e, 0));
+        for(auto& e : commands()) items_list.emplace_back(std::make_pair(e, 0));
     }
 
-    const char* const argv[] = {"/usr/bin/dmenu", (const char*)0};
-    spawn dmenu(argv);
+    return items_list;
+}
 
-    for(auto& e : cmd_list) dmenu.stdin << e.first << "\n";
-    dmenu.send_eof();
-    dmenu.wait();
+void update_items_cache(const auto& cache_file, const auto& cmd) {
 
-    std::string s;
-    getline(dmenu.stdout, s);
-
-    auto shell = getenv("SHELL");
-    auto p = popen(shell, "w");
-    fputs(s.c_str(), p);
-    pclose(p);
-
-    std::ifstream r_cache(home + "/.cache/dmenu_sorted");
+    std::ifstream r_cache(cache_file);
     if(!r_cache.is_open() || r_cache.get(), !r_cache.good()) {
-        r_cache.close();
-        std::ofstream w_cache(home + "/.cache/dmenu_sorted");
+        std::ofstream w_cache(cache_file);
         for(auto& e : commands()) w_cache << e << " 0\n";
     } else {
-        fs::remove(fs::path(home + "/.cache/dmenu_sorted"));
-        std::ofstream w_cache(home + "/.cache/dmenu_sorted");
-        for(auto& e : cmd_list) {
-            if(e.first == s) e.second++;
+        r_cache.close();
+        fs::remove(fs::path(cache_file));
+        std::ofstream w_cache(cache_file);
+        for(auto& e : get_items(cache_file)) {
+            if(e.first == cmd) e.second++;
 
             w_cache << e.first << " " << e.second << "\n";
         }
     }
+}
+
+void execute_cmd(const auto& cmd) {
+    auto shell = getenv("SHELL");
+    auto p = popen(shell, "w");
+    fputs(cmd.c_str(), p);
+    pclose(p);
+}
+
+int main(int, char* argv[]) {
+    std::string home = getenv("HOME");
+    auto cache_file = home + "/.cache/dmenu_sorted";
+
+    argv[0] = const_cast<char*>("/usr/bin/dmenu");
+
+    spawn dmenu(argv);
+
+    for(auto& e : get_items(cache_file)) dmenu.stdin << e.first << "\n";
+    dmenu.send_eof();
+    dmenu.wait();
+
+    std::string cmd;
+    getline(dmenu.stdout, cmd);
+
+    execute_cmd(cmd);
+    update_items_cache(cache_file, cmd);
 }
