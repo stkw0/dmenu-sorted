@@ -15,6 +15,7 @@ include_directories(cpp)
 
 add_executable(${PROJECT_NAME} ${SRC})
 target_link_libraries(${PROJECT_NAME} stdc++fs)
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 
 file(GLOB CLANG_FORMAT_FILE .clang-format)
 
