@@ -108,6 +108,6 @@ int main(int, char* argv[]) {
     std::string cmd;
     getline(dmenu.stdout, cmd);
 
-    execute_cmd(cmd);
     update_items_cache(cache_file, cmd);
+    execute_cmd(cmd);
 }
