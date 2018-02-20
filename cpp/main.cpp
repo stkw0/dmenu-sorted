@@ -87,10 +87,8 @@ void update_items_cache(const auto& cache_file, const auto& cmd) {
 }
 
 void execute_cmd(const auto& cmd) {
-    auto shell = getenv("SHELL");
-    auto p = popen(shell, "w");
-    fputs(cmd.c_str(), p);
-    pclose(p);
+    const char* argv[] = {cmd.c_str(), (const char*)0};
+    spawn(argv, true);
 }
 
 int main(int, char* argv[]) {
@@ -107,6 +105,8 @@ int main(int, char* argv[]) {
 
     std::string cmd;
     getline(dmenu.stdout, cmd);
+
+    if(cmd=="") std::exit(1);
 
     update_items_cache(cache_file, cmd);
     execute_cmd(cmd);
