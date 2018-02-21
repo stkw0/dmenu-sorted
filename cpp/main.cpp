@@ -89,8 +89,15 @@ void update_items_cache(const auto& cache_file, const auto& cmd) {
 }
 
 void execute_cmd(const auto& cmd, char* env[]) {
+    auto pid = fork();
+    if(pid < 0) throw std::runtime_error("Can not fork");
+    if(pid > 0) std::exit(0);
+    if(chdir("/") < 0) std::exit(1);
+    if(!freopen("/dev/null", "r", stdin)) std::exit(1);
+    if(!freopen("/dev/null", "w", stdout)) std::exit(1);
+    if(!freopen("/dev/null", "w", stderr)) std::exit(1);
     const char* argv[] = {cmd.c_str(), (const char*)0};
-    spawn(argv, true, env).send_eof();
+    execvpe(argv[0], const_cast<char* const*>(argv), const_cast<char* const*>(env));
 }
 
 int main(int, char* argv[], char* env[]) {
