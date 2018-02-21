@@ -1,6 +1,7 @@
 // Author: Konstantin Tretyakov
 // License: MIT
 
+#include <cstring>
 #include <exception>
 #include <iostream>
 #include <memory>
@@ -52,7 +53,8 @@ spawn::spawn(const char* const argv[], bool with_path, const char* const envp[])
         }
         if(result == -1) {
             // Note: no point writing to stdout here, it has been redirected
-            std::cerr << "Error: Failed to launch program" << std::endl;
+            std::cerr << "Error: Failed to launch program: " << strerror(errno)
+                      << std::endl;
             exit(1);
         }
     } else {

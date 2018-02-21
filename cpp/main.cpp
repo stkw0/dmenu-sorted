@@ -16,11 +16,13 @@ using item = std::pair<std::string, int>;
 
 // TODO: Handle errors
 
-std::vector<const char*> paths() {
+std::vector<std::string> paths() {
     using namespace std;
 
-    vector<const char*> paths;
-    auto env_path = getenv("PATH");
+    vector<std::string> paths;
+    char* t = getenv("PATH");
+    char env_path[strlen(t) + 1];
+    strcpy(env_path, t);
 
     for(auto p = strtok(env_path, ":"); p; p = strtok(NULL, ":"))
         paths.emplace_back(p);
@@ -40,7 +42,7 @@ std::vector<std::string> commands() {
     for(auto& path : paths()) try {
             for(auto& e : fs::directory_iterator(path)) {
                 if(is_executable(e))
-                    commands.emplace_back(e.path().filename().c_str());
+                    commands.emplace_back(e.path().filename().string());
             }
         } catch(...) {
             // Ignore errors for now
@@ -86,18 +88,18 @@ void update_items_cache(const auto& cache_file, const auto& cmd) {
     }
 }
 
-void execute_cmd(const auto& cmd) {
+void execute_cmd(const auto& cmd, char* env[]) {
     const char* argv[] = {cmd.c_str(), (const char*)0};
-    spawn(argv, true);
+    spawn(argv, true, env).send_eof();
 }
 
-int main(int, char* argv[]) {
+int main(int, char* argv[], char* env[]) {
     std::string home = getenv("HOME");
     auto cache_file = home + "/.cache/dmenu_sorted";
 
     argv[0] = const_cast<char*>("/usr/bin/dmenu");
 
-    spawn dmenu(argv);
+    spawn dmenu(argv, false, env);
 
     for(auto& e : get_items(cache_file)) dmenu.stdin << e.first << "\n";
     dmenu.send_eof();
@@ -106,8 +108,8 @@ int main(int, char* argv[]) {
     std::string cmd;
     getline(dmenu.stdout, cmd);
 
-    if(cmd=="") std::exit(1);
+    if(cmd == "") std::exit(1);
 
     update_items_cache(cache_file, cmd);
-    execute_cmd(cmd);
+    execute_cmd(cmd, env);
 }
