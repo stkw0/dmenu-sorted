@@ -14,13 +14,11 @@
 namespace fs = std::experimental::filesystem;
 using item = std::pair<std::string, int>;
 
-// TODO: Handle errors
-
 std::vector<std::string> paths() {
-    using namespace std;
-
-    vector<std::string> paths;
+    std::vector<std::string> paths;
     char* t = getenv("PATH");
+    if(!t) throw std::runtime_error("Can not get PATH env var");
+
     char env_path[strlen(t) + 1];
     strcpy(env_path, t);
 
@@ -81,6 +79,7 @@ std::vector<item> get_items(const auto& cache_file) {
 
 void update_items_cache(const auto& cache_file, const auto& cmd) {
     std::ofstream cache(cache_file, std::ios::trunc);
+    if(!cache.is_open()) throw std::runtime_error("Can not open cache file");
     for(auto& e : get_items(cache_file)) {
         if(e.first == cmd) e.second++;
 
@@ -100,9 +99,11 @@ void execute_cmd(const auto& cmd, char* env[]) {
     execvpe(argv[0], const_cast<char* const*>(argv), const_cast<char* const*>(env));
 }
 
-int main(int, char* argv[], char* env[]) {
-    std::string home = getenv("HOME");
-    auto cache_file = home + "/.cache/dmenu_sorted";
+int main(int, char* argv[], char* env[]) try {
+    auto home = getenv("HOME");
+    if(!home) throw std::runtime_error("Can not get HOME env var");
+
+    auto cache_file = std::string(home) + "/.cache/dmenu_sorted";
 
     argv[0] = const_cast<char*>("/usr/bin/dmenu");
 
@@ -119,4 +120,7 @@ int main(int, char* argv[], char* env[]) {
 
     update_items_cache(cache_file, cmd);
     execute_cmd(cmd, env);
+} catch(std::exception& e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
 }
