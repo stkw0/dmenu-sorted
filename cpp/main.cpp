@@ -7,6 +7,8 @@
 #include <utility>
 #include <vector>
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "spawn.hpp"
@@ -80,11 +82,18 @@ std::vector<item> get_items(const auto& cache_file) {
 void update_items_cache(const auto& cache_file, const auto& cmd) {
     std::ofstream cache(cache_file, std::ios::trunc);
     if(!cache.is_open()) throw std::runtime_error("Can not open cache file");
+
+    bool not_in_cache = true;
     for(auto& e : get_items(cache_file)) {
-        if(e.first == cmd) e.second++;
+        if(e.first == cmd) {
+            e.second++;
+            not_in_cache = false;
+        }
 
         cache << e.first << " " << e.second << "\n";
     }
+
+    if(not_in_cache) cache << cmd << " " << 1 << "\n";
 }
 
 void execute_cmd(const auto& cmd, char* env[]) {
