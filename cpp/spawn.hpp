@@ -1,6 +1,9 @@
 // Original Author: Konstantin Tretyakov
 // License: MIT
 
+
+#include <memory>
+
 #include <ext/stdio_filebuf.h> // NB: Specific to libstdc++
 
 
