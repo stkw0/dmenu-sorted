@@ -14,7 +14,7 @@
 #include "spawn.hpp"
 
 namespace fs = std::experimental::filesystem;
-using item = std::pair<std::string, int>;
+using item = std::pair<int, std::string>;
 
 std::vector<std::string> paths() {
     std::vector<std::string> paths;
@@ -60,20 +60,21 @@ std::vector<item> get_items(const auto& cache_file) {
 
     if(std::ifstream cache(cache_file); cache.is_open()) {
         do {
+            int n;
+            cache >> n;
+
             std::string cmd;
             cache >> cmd;
             if(cmd == "") break;
 
-            int n;
-            cache >> n;
-            items_list.emplace_back(std::make_pair(cmd, n));
+            items_list.emplace_back(std::make_pair(n, cmd));
         } while(cache.good());
 
         std::sort(items_list.begin(), items_list.end(), [](const item& a, const item& b) {
-            return a.second > b.second;
+            return a.first > b.first;
         });
     } else {
-        for(auto& e : commands()) items_list.emplace_back(std::make_pair(e, 0));
+        for(auto& e : commands()) items_list.emplace_back(std::make_pair(0, e));
     }
 
     return items_list;
@@ -85,15 +86,15 @@ void update_items_cache(const auto& cache_file, const auto& cmd) {
 
     bool not_in_cache = true;
     for(auto& e : get_items(cache_file)) {
-        if(e.first == cmd) {
-            e.second++;
+        if(e.second == cmd) {
+            e.first++;
             not_in_cache = false;
         }
 
-        cache << e.first << " " << e.second << "\n";
+        cache << e.second << " " << e.first << "\n";
     }
 
-    if(not_in_cache) cache << cmd << " " << 1 << "\n";
+    if(not_in_cache) cache << 1 << " " << cmd << "\n";
 }
 
 void execute_cmd(const auto& cmd, char* env[]) {
@@ -118,7 +119,7 @@ int main(int, char* argv[], char* env[]) try {
 
     spawn dmenu(argv, false, env);
 
-    for(auto& e : get_items(cache_file)) dmenu.stdin << e.first << "\n";
+    for(auto& e : get_items(cache_file)) dmenu.stdin << e.second << "\n";
     dmenu.send_eof();
     dmenu.wait();
 
