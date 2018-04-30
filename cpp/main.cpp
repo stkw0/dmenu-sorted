@@ -91,7 +91,7 @@ void update_items_cache(const auto& cache_file, const auto& cmd) {
             not_in_cache = false;
         }
 
-        cache << e.second << " " << e.first << "\n";
+        cache << e.first << " " << e.second << "\n";
     }
 
     if(not_in_cache) cache << 1 << " " << cmd << "\n";
