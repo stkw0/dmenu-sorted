@@ -6,20 +6,20 @@ for i in $(echo "$PATH" | tr ':' '\n'); do
    stat "$i" &> /dev/null && WAIT_FILES+=" $i"
 done
 
+DMENU_EXISTS=true
+stat $FNAME &> /dev/null || DMENU_EXISTS=false
+
+if ! $DMENU_EXISTS; then
+   TMP_FILE=$(mktemp)
+   find $WAIT_FILES -type f -executable > "$TMP_FILE"
+   for i in $(sort -u "$TMP_FILE"); do
+      NAME=$(basename $i)
+      echo "0 $NAME" >> $FNAME
+   done
+   rm "$TMP_FILE"
+fi
+
 while true; do
-   DMENU_EXISTS=true
-   stat $FNAME &> /dev/null || DMENU_EXISTS=false
-
-   if ! $DMENU_EXISTS; then
-      TMP_FILE=$(mktemp)
-      find $WAIT_FILES -type f -executable > "$TMP_FILE"
-      for i in $(sort -u "$TMP_FILE"); do
-         NAME=$(basename $i)
-         echo "0 $NAME" >> $FNAME
-      done
-      rm "$TMP_FILE"
-   fi
-
    EVENT=$(inotifywait -r -q --format "%f %e" -e "delete,create,move" $WAIT_FILES)
    EVENT_TYPE=$(echo $EVENT | cut -d' ' -f2)
    EVENT_FILE=$(basename "$(echo $EVENT | cut -d' ' -f1 | cut -d# -f1)")
