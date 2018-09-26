@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 #set(CMAKE_CXX_EXTENSIONS OFF)
 #set(CXX_STANDARD_REQUIRED YES)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall -Wextra -Werror -Wcast-qual -Wconversion -Wunreachable-code -Wmissing-noreturn -Wshadow -Wfatal-errors")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall -Wextra -Werror -Wcast-qual -Wconversion -Wunreachable-code -Wmissing-noreturn -Wshadow -Wfatal-errors -fconcepts")
 
 file(GLOB_RECURSE SRC cpp/*.cpp)
 include_directories(cpp)
